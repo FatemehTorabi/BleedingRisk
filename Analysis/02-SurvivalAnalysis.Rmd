@@ -1,0 +1,153 @@
+
+#Modelling 
+
+##Survival analysis
+
+
+```{r survivals,results="asis",echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,fig.width=7,fig.height=4}
+
+surv<- sqlQuery(sql, "
+          SELECT  
+          ALF_PE, GNDR_CD, BLEED,TIME_TO_BLEED,
+          CASE 
+          	WHEN BASE_AGE < 65 THEN '18-65'
+          	WHEN BASE_AGE BETWEEN 65 AND 75 THEN '65-74'
+          	WHEN BASE_AGE >= 75 THEN '75+'
+          	END AS AGE_CAT
+          ,AGE_65_74, AGE_OVER_65, AGE_OVER_75 ,
+          SEX_FEMALE , STROKE_CHAD , MEDICATION_HASB , CHF_CHAD_COMB, HYPT_GP , LIV_HAS_COMB, RENAL_HAS_GP , INR_5_OR_ABOVE ,
+          INR_8_OR_ABOVE, ALCOHOL , VASC_CHAD_COMB , DIAB_CHAD_COMB , AC_BASELINE_2017 , MJ_BLEEDING_HASB_P , MJ_BLEEDING_GP , HASBLED_INR5 , HASBLED_INR8, CHADSVASC,
+          STROKE_CHAD_BL , MEDICATION_HASB_BL , CHF_CHAD_COMB_BL, HYPT_GP_BL , LIV_HAS_COMB_BL, RENAL_HAS_GP_BL , INR_5_OR_ABOVE_BL ,
+          INR_8_OR_ABOVE_BL, ALCOHOL_BL , VASC_CHAD_COMB_BL , DIAB_CHAD_COMB_BL , MJ_BLEEDING_HASB_P_BL , MJ_BLEEDING_GP_BL , HASBLED_INR5_BL , HASBLED_INR8_BL, CHADSVASC_BL,
+          EVER_SMOKED, NEVER_SMOKED, 
+          CASE
+          	WHEN HASBLED_INR5 >= 5 THEN 5
+          	ELSE HASBLED_INR5
+          	END AS HASBLED_INR5PLUS,
+          CASE
+          	WHEN HASBLED_INR8 >= 5 THEN 5
+          	ELSE HASBLED_INR8
+          	END AS HASBLED_INR8PLUS,
+          	 CASE
+          	WHEN HASBLED_INR5_BL >= 5 THEN 5
+          	ELSE HASBLED_INR5_BL
+          	END AS HASBLED_INR5PLUS_BL,
+          CASE
+          	WHEN HASBLED_INR8_BL >= 5 THEN 5
+          	ELSE HASBLED_INR8_BL
+          	END AS HASBLED_INR8PLUS_BL
+          FROM 	SAILW0866V.MSC_HASB_20190807
+          WHERE alf_pe IN 
+          	(
+          	SELECT * FROM SAILW0866V.ALF_ANALYSED_MSC_20190809
+          	)
+
+		")
+
+
+library(survival)
+#surv<- survfit(Surv(ceiling(TIMEREV/365), CV)~1, conf.type="none", data = surv.ep)
+#plot(surv, ylim=c(0.86,1), main="survival Time to CVD events for Epilepsy cohort", xlab = "Days", xscale = 1/365, ylab="Cumulative Survival", mark.time=F)
+
+
+#cox regression
+#cox.surv<-coxph(Surv(TIMEREV, CV)~1, data=surv.ep)
+#summary(cox.surv)
+
+
+#hazard ratio for those on AED or Non_AED
+
+surv.HAS<- survfit(Surv(ceiling(TIME_TO_BLEED), BLEED)~ GNDR_CD, conf.type="none", data = surv)
+
+plot(surv.HAS, ylim=c(0.80,1), main="Figure 3: survival Time to major bleeding events for male and females", xlab = "Days", xscale = 1, ylab="Cumulative Survival", mark.time=F, col = c('blue','red'))
+legend("topright", c("Male", "Female"), lty = c(1,1), col = c("blue","red"))
+
+cox.surv<-coxph(Surv(TIME_TO_BLEED, BLEED)~ GNDR_CD, data=surv)
+summary(cox.surv)
+
+#fitting cox model for all variables in the glm:
+
+
+#survival curve for HASBLED INR5
+surv.HAS<- survfit(Surv(ceiling(TIME_TO_BLEED), BLEED)~ HASBLED_INR5PLUS, conf.type="none", data = surv)
+
+plot(surv.HAS, ylim=c(0.80,1), main="Figure 4: survival Time to major bleeding events for HASBLED_INR5 levels", xlab = "Days", xscale = 1, ylab="Cumulative Survival", mark.time=F, col = c(7,24,13,14,3,1,10))
+legend("bottomleft", c("HAS=0", "HAS=1", "HAS=2","HAS=3","HAS=4","HAS=5+"), lty = c(1,1), col = c(7,24,13,14,3,1,10))
+
+
+#HASBLED INR8
+surv.HAS<- survfit(Surv(ceiling(TIME_TO_BLEED), BLEED)~ HASBLED_INR8PLUS, conf.type="none", data = surv)
+
+plot(surv.HAS, ylim=c(0.80,1), main="Figure 5: survival Time to major bleeding events for HASBLED_INR8 levels", xlab = "Days", xscale = 1, ylab="Cumulative Survival", mark.time=F, col = c(7,24,13,14,3,1,10))
+legend("bottomleft", c("HAS=0", "HAS=1", "HAS=2","HAS=3","HAS=4","HAS=5+"), lty = c(1,1), col = c(7,24,13,14,3,1,10))
+
+##############################
+#cox regression:
+
+surv$CHADSVASC_BL=as.factor(as.numeric(surv$CHADSVASC_BL))
+surv$HASBLED_INR5PLUS_BL=as.factor(as.numeric(surv$HASBLED_INR5PLUS_BL))
+surv$HASBLED_INR8PLUS_BL=as.factor(as.numeric(surv$HASBLED_INR8PLUS_BL))
+surv$AGE_CAT=as.factor(surv$AGE_CAT)
+
+##checking why 18-64 is not appearing in the models
+cox.surv<-coxph(Surv(TIME_TO_BLEED, BLEED)~ AGE_CAT, data=surv)
+summary(cox.surv)
+
+##ALL BASELINE VARIABLES:
+cox.surv<-coxph(Surv(TIME_TO_BLEED, BLEED)~ 
+                  AGE_CAT+ SEX_FEMALE+ 
+                  CHADSVASC_BL+STROKE_CHAD_BL+ MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                  VASC_CHAD_COMB_BL + DIAB_CHAD_COMB_BL + MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+                  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  +STROKE_CHAD + CHF_CHAD_COMB+ HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                  INR_8_OR_ABOVE+ ALCOHOL+ VASC_CHAD_COMB + DIAB_CHAD_COMB + NEVER_SMOKED+EVER_SMOKED
+#CHADSVASC+ HASBLED_INR5 + HASBLED_INR8+
+, data=surv)
+summary(cox.surv)
+
+#LETS SEE THE PERFORMANCE OF MODEL IN ABSENCE OF HASBLED:
+
+cox.surv<-coxph(Surv(TIME_TO_BLEED, BLEED)~ 
+                  AGE_CAT+ SEX_FEMALE+ 
+                  CHADSVASC_BL+STROKE_CHAD_BL+ MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                  VASC_CHAD_COMB_BL + DIAB_CHAD_COMB_BL + MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL 
+#                 + HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  +STROKE_CHAD + CHF_CHAD_COMB+ HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                  INR_8_OR_ABOVE+ ALCOHOL+ VASC_CHAD_COMB + DIAB_CHAD_COMB + NEVER_SMOKED+EVER_SMOKED
+#CHADSVASC+ HASBLED_INR5 + HASBLED_INR8+
+, data=surv)
+summary(cox.surv)
+
+#keeping only significant ones in:
+cox.surv<-coxph(Surv(TIME_TO_BLEED, BLEED)~ 
+                  SEX_FEMALE+ CHF_CHAD_COMB_BL+ VASC_CHAD_COMB_BL + DIAB_CHAD_COMB_BL + MJ_BLEEDING_GP_BL 
+#                 + HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  +STROKE_CHAD + CHF_CHAD_COMB+ LIV_HAS_COMB+ INR_5_OR_ABOVE+
+                  VASC_CHAD_COMB + DIAB_CHAD_COMB 
+#CHADSVASC+ HASBLED_INR5 + HASBLED_INR8+
+, data=surv)
+summary(cox.surv)
+
+
+##SMOKING ONLY 
+cox.surv<-coxph(Surv(TIME_TO_BLEED, BLEED)~ AGE_CAT+ SEX_FEMALE+ALCOHOL+ NEVER_SMOKED+EVER_SMOKED
+, data=surv)
+
+#hazard ratio of bleeds for HASBLED variables
+cox.surv<-coxph(Surv(TIME_TO_BLEED, BLEED)~ AGE_CAT+ MEDICATION_HASB_BL + HYPT_GP_BL+ STROKE_CHAD_BL+MJ_BLEEDING_HASB_P_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+ ALCOHOL_BL+ MEDICATION_HASB_BL
+, data=surv)
+summary(cox.surv)
+
+
+#adding chads in 
+cox.surv<-coxph(Surv(TIME_TO_BLEED, BLEED)~ AGE_CAT+ MEDICATION_HASB_BL + HYPT_GP_BL+ STROKE_CHAD_BL+MJ_BLEEDING_HASB_P_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+ ALCOHOL_BL+ MEDICATION_HASB_BL+CHADSVASC_BL
+, data=surv)
+summary(cox.surv)
+
+
+```
+

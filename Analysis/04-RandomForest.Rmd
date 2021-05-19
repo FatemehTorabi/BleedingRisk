@@ -1,0 +1,272 @@
+#Modelling
+
+##Random Forest:
+
+```{r randomforest,results="asis",echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,fig.width=7,fig.height=4}
+
+###############################
+##random forest:
+###############################
+
+RF2<-surv
+
+
+#balancing out the sample of bleed and no bleeds:
+RF<-sqlQuery(sql, "
+(
+SELECT  
+          ALF_PE, GNDR_CD, BLEED,TIME_TO_BLEED,
+          CASE 
+          	WHEN BASE_AGE < 65 THEN '18-65'
+          	WHEN BASE_AGE BETWEEN 65 AND 75 THEN '65-74'
+          	WHEN BASE_AGE >= 75 THEN '75+'
+          	END AS AGE_CAT
+          ,AGE_65_74, AGE_OVER_65, AGE_OVER_75 ,
+          SEX_FEMALE , STROKE_CHAD , MEDICATION_HASB , CHF_CHAD_COMB, HYPT_GP , LIV_HAS_COMB, RENAL_HAS_GP , INR_5_OR_ABOVE ,
+          INR_8_OR_ABOVE, ALCOHOL , VASC_CHAD_COMB , DIAB_CHAD_COMB , AC_BASELINE_2017 , MJ_BLEEDING_HASB_P , MJ_BLEEDING_GP , HASBLED_INR5 , HASBLED_INR8, CHADSVASC,
+          STROKE_CHAD_BL , MEDICATION_HASB_BL , CHF_CHAD_COMB_BL, HYPT_GP_BL , LIV_HAS_COMB_BL, RENAL_HAS_GP_BL , INR_5_OR_ABOVE_BL ,
+          INR_8_OR_ABOVE_BL, ALCOHOL_BL , VASC_CHAD_COMB_BL , DIAB_CHAD_COMB_BL , MJ_BLEEDING_HASB_P_BL , MJ_BLEEDING_GP_BL , HASBLED_INR5_BL , HASBLED_INR8_BL, CHADSVASC_BL,
+          EVER_SMOKED, NEVER_SMOKED, 
+          CASE
+          	WHEN HASBLED_INR5 >= 5 THEN 5
+          	ELSE HASBLED_INR5
+          	END AS HASBLED_INR5PLUS,
+          CASE
+          	WHEN HASBLED_INR8 >= 5 THEN 5
+          	ELSE HASBLED_INR8
+          	END AS HASBLED_INR8PLUS,
+          	 CASE
+          	WHEN HASBLED_INR5_BL >= 5 THEN 5
+          	ELSE HASBLED_INR5_BL
+          	END AS HASBLED_INR5PLUS_BL,
+          CASE
+          	WHEN HASBLED_INR8_BL >= 5 THEN 5
+          	ELSE HASBLED_INR8_BL
+          	END AS HASBLED_INR8PLUS_BL
+          FROM 	SAILW0866V.MSC_HASB_20190807
+          WHERE alf_pe IN 
+          	(
+          	SELECT * FROM SAILW0866V.ALF_ANALYSED_MSC_20190809
+          	)
+		AND bleed=1
+)
+
+UNION 
+
+(
+SELECT  
+          ALF_PE, GNDR_CD, BLEED,TIME_TO_BLEED,
+          CASE 
+          	WHEN BASE_AGE < 65 THEN '18-65'
+          	WHEN BASE_AGE BETWEEN 65 AND 75 THEN '65-74'
+          	WHEN BASE_AGE >= 75 THEN '75+'
+          	END AS AGE_CAT
+          ,AGE_65_74, AGE_OVER_65, AGE_OVER_75 ,
+            SEX_FEMALE , STROKE_CHAD , MEDICATION_HASB , CHF_CHAD_COMB, HYPT_GP , LIV_HAS_COMB, RENAL_HAS_GP , INR_5_OR_ABOVE ,
+            INR_8_OR_ABOVE, ALCOHOL , VASC_CHAD_COMB , DIAB_CHAD_COMB , AC_BASELINE_2017 , MJ_BLEEDING_HASB_P , MJ_BLEEDING_GP , HASBLED_INR5 , HASBLED_INR8, CHADSVASC,
+            STROKE_CHAD_BL , MEDICATION_HASB_BL , CHF_CHAD_COMB_BL, HYPT_GP_BL , LIV_HAS_COMB_BL, RENAL_HAS_GP_BL , INR_5_OR_ABOVE_BL ,
+            INR_8_OR_ABOVE_BL, ALCOHOL_BL , VASC_CHAD_COMB_BL , DIAB_CHAD_COMB_BL , MJ_BLEEDING_HASB_P_BL ,     MJ_BLEEDING_GP_BL , HASBLED_INR5_BL , HASBLED_INR8_BL, CHADSVASC_BL,
+            EVER_SMOKED, NEVER_SMOKED, 
+          CASE
+          	WHEN HASBLED_INR5 >= 5 THEN 5
+          	ELSE HASBLED_INR5
+          	END AS HASBLED_INR5PLUS,
+          CASE
+          	WHEN HASBLED_INR8 >= 5 THEN 5
+          	ELSE HASBLED_INR8
+          	END AS HASBLED_INR8PLUS,
+          	 CASE
+          	WHEN HASBLED_INR5_BL >= 5 THEN 5
+          	ELSE HASBLED_INR5_BL
+          	END AS HASBLED_INR5PLUS_BL,
+          CASE
+          	WHEN HASBLED_INR8_BL >= 5 THEN 5
+          	ELSE HASBLED_INR8_BL
+          	END AS HASBLED_INR8PLUS_BL
+          FROM 	SAILW0866V.MSC_HASB_20190807
+          WHERE alf_pe IN 
+          	(
+          	SELECT * FROM SAILW0866V.ALF_ANALYSED_MSC_20190809
+          	)
+		AND bleed=0 
+		FETCH FIRST 2416 ROWS ONLY 
+) ")
+
+
+nrow(RF)
+install.packages("pROC")
+install.packages("randomForest")
+library(pROC)
+library(randomForest)
+
+#loading data for Random Forest
+#taken MJ bleedings out
+
+bound<-floor((nrow(RF)/4)*3)
+RF <-RF[sample(nrow(RF)), ]
+RF.train <- RF[1:bound, ]
+RF.test <-RF[(bound+1):nrow(RF), ]
+
+
+#model without HASB in:
+bound<-floor((nrow(RF2)/4)*3)
+RF2 <-RF2[sample(nrow(RF2)), ]
+RF2.train <- RF2[1:bound, ]
+RF2.test <-RF2[(bound+1):nrow(RF2), ]
+
+#run this model with RF data without 
+RF.model<- randomForest(factor(BLEED)~., data=RF.train)
+#onyl hasbled factors in:
+RF.model<- randomForest(factor(BLEED)~AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=RF.train)
+
+
+RF.model<- randomForest(factor(BLEED)~ AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+                 MEDICATION_HASB + CHF_CHAD_COMB + HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+INR_8_OR_ABOVE+ ALCOHOL, data=RF.train)
+
+plot(RF.model)
+
+##variable importance: with limited number of trees
+RF.model<- randomForest(factor(BLEED)~AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=RF.train,importance=TRUE, ntree=1000, mtry=5)
+
+RF.model<- randomForest(factor(BLEED)~AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+                 MEDICATION_HASB + CHF_CHAD_COMB + HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+INR_8_OR_ABOVE+ ALCOHOL, data=RF.train,importance=TRUE, ntree=1000, mtry=5)
+varImpPlot(RF.model)
+
+####################################################
+#model without balancing out the samples 
+RF2.model<- randomForest(factor(BLEED)~AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=RF2.train)
+plot(RF2.model)
+
+RF2.model<- randomForest(factor(BLEED)~AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=RF2.train, importance=TRUE, ntree=1000, mtry=5)
+
+varImpPlot(RF2.model)
+
+#plot a tree from random forest
+#install.packages("party")
+library(party)
+x<- ctree(factor(BLEED)~AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=RF.train)
+plot(x, type="simple")
+
+#########
+#one tree of unbalanced model:
+x2<- ctree(factor(BLEED)~AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=RF2.train)
+plot(x2, type="simple")
+
+
+#plot a tree from random forest
+#install.packages("party")
+library(party)
+x<- ctree(factor(ANY_BLEED)~., data=RF2.train)
+plot(x, type="simple")
+
+
+varImpPlot(RF.model)
+varImpPlot(RF2.model)
+
+#######################################################
+RF2 <-RF2[sample(nrow(RF2)), ]
+RF2.train <- RF2[1:bound, ]
+RF2.test <-RF2[(bound+1):nrow(RF2), ]
+#rerun one plot for model with HASBLEd in 
+x<- ctree(factor(ANY_BLEED)~., data=RF2.train)
+plot(x, type="simple")
+
+#lets do prediction using test dataset:
+rf.pd<-predict(RF.model, RF.test)
+rf.confusion <- table(observed = RF.test$BLEED, predicted =rf.pd)
+rf.confusion
+
+#performance of RF on RF2 balanced sample test
+rf.pd<-predict(RF.model, RF2.test)
+rf.confusion <- table(observed = RF2.test$BLEED, predicted =rf.pd)
+rf.confusion
+
+#lets do prediction using test dataset:
+rf.pd<-predict(RF2.model, RF2.test)
+rf.confusion <- table(observed = RF2.test$BLEED, predicted =rf.pd)
+
+rf.pd<-predict(RF2.model, RF.test)
+rf.confusion <- table(observed = RF.test$BLEED, predicted =rf.pd)
+
+rf.confusion
+
+```
+
+```{r model comparison}
+##########################################
+#comparison
+##########################################
+
+#roc of log reg: AUC 58%
+ #roc of log reg: AUC 62.4%
+roc(surv$BLEED, HASLOGIT$fitted.values, plot=TRUE, legacy.axes=TRUE, percent=TRUE,xlab="False Positive Percentage", ylab="True Positive Percentage", col="#378eb8", lwb=2 ,print.auc=TRUE)
+#we want to draw RF roc on the same graph: AUC 54.9%
+plot.roc(RF.train$BLEED, RF.model$votes[,1], percent=TRUE, col="#4daf4a", lwd=3,print.auc=TRUE, add=TRUE, print.auc.y=40)
+#add a legend:
+legend("bottomright", legend=c("Logistic Regression", "Random Forest(balanced sample)"),col=c("#377eb8","#4daf4a"), lwd=4)         
+
+
+##model on entire cohort:   
+#ploting the RF(total pop) on the top
+roc(surv$BLEED, HASLOGIT$fitted.values, plot=TRUE, legacy.axes=TRUE, percent=TRUE,xlab="False Positive Percentage", ylab="True Positive Percentage", col="#378eb8", lwb=2 ,print.auc=TRUE)
+#we want to draw RF roc on the same graph: AUC 54.9%
+plot.roc(RF2.train$BLEED, RF2.model$votes[,1], percent=TRUE, col="#4daf4a", lwd=3,print.auc=TRUE, add=TRUE, print.auc.y=40)
+#add a legend:
+legend("bottomright", legend=c("Logistic Regression", "Random Forest(entire cohort)"),col=c("#377eb8","#4daf4a"), lwd=4)         
+
+
+```

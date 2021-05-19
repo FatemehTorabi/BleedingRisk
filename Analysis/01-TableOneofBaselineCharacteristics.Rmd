@@ -1,0 +1,123 @@
+
+Table one of the cohort:
+```{r table1,results="asis",echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,fig.width=7,fig.height=4}
+
+#View(ep_cohort)
+#HAS_cohort[HAS_cohort$BASE_AGE < 65,"AGE_CAT"]="18-65";
+#HAS_cohort[HAS_cohort$BASE_AGE >= 65 & HAS_cohort$BASE_AGE < 75,"AGE_CAT"]="65-74";
+#HAS_cohort[HAS_cohort$BASE_AGE >= 75,"AGE_CAT"]="75+";
+#HAS_cohort$AGE_CAT=as.factor(as.numeric(HAS_cohort$AGE_CAT));
+
+HAS_cohort$AGE_65_74=as.factor(as.numeric(HAS_cohort$AGE_65_74));
+HAS_cohort$AGE_OVER_65=as.factor(as.numeric(HAS_cohort$AGE_OVER_65));
+HAS_cohort$AGE_OVER_75=as.factor(as.numeric(HAS_cohort$AGE_OVER_75));
+
+#I AM HERE
+HAS_cohort$GNDR_CD=as.factor(as.numeric(HAS_cohort$GNDR_CD))
+
+#HAS_cohort$BASE_AGE=as.factor(as.numeric(HAS_cohort$BASE_AGE))
+
+HAS_cohort$SEX_FEMALE=as.factor(as.numeric(HAS_cohort$SEX_FEMALE))
+#HAS_cohort$BASE_AGE=as.factor(as.numeric(HAS_cohort$BASE_AGE))
+
+HAS_cohort$DIAB_CHAD_COMB_BL=as.factor(as.numeric(HAS_cohort$DIAB_CHAD_COMB_BL))
+
+HAS_cohort$STROKE_CHAD_BL=as.factor(as.numeric(HAS_cohort$STROKE_CHAD_BL))
+
+HAS_cohort$MEDICATION_HASB_BL=as.factor(as.numeric(HAS_cohort$MEDICATION_HASB_BL))
+
+HAS_cohort$CHF_CHAD_COMB_BL=as.factor(as.numeric(HAS_cohort$CHF_CHAD_COMB_BL))
+
+HAS_cohort$HYPT_GP_BL=as.factor(as.numeric(HAS_cohort$HYPT_GP_BL))
+
+HAS_cohort$LIV_HAS_COMB_BL=as.factor(as.numeric(HAS_cohort$LIV_HAS_COMB_BL))
+
+HAS_cohort$RENAL_HAS_GP_BL=as.factor(as.numeric(HAS_cohort$RENAL_HAS_GP_BL))
+
+HAS_cohort$INR_5_OR_ABOVE_BL=as.factor(as.numeric(HAS_cohort$INR_5_OR_ABOVE_BL))
+
+HAS_cohort$INR_8_OR_ABOVE_BL=as.factor(as.numeric(HAS_cohort$INR_8_OR_ABOVE_BL))
+
+HAS_cohort$ALCOHOL_BL=as.factor(as.numeric(HAS_cohort$ALCOHOL_BL))
+
+HAS_cohort$VASC_CHAD_COMB_BL=as.factor(as.numeric(HAS_cohort$VASC_CHAD_COMB_BL))
+
+HAS_cohort$DIAB_CHAD_COMB_BL=as.factor(as.numeric(HAS_cohort$DIAB_CHAD_COMB_BL))
+
+HAS_cohort$BLEED=as.factor(as.numeric(HAS_cohort$BLEED))
+
+HAS_cohort$MJ_BLEEDING_HASB_P_BL=as.factor(as.numeric(HAS_cohort$MJ_BLEEDING_HASB_P_BL))
+
+HAS_cohort$MJ_BLEEDING_GP_BL=as.factor(as.numeric(HAS_cohort$MJ_BLEEDING_GP_BL))
+
+HAS_cohort$CHADSVASC_BL2=as.factor(as.numeric(HAS_cohort$CHADSVASC_BL2))
+HAS_cohort$HASBLED_INR5_BL2=as.factor(as.numeric(HAS_cohort$HASBLED_INR5_BL2))
+HAS_cohort$HASBLED_INR8_BL2=as.factor(as.numeric(HAS_cohort$HASBLED_INR8_BL2))
+
+HAS_cohort$AGE_CAT
+#i WILL PUT 2 CHADS SCORE IN THE TABLE TO SUMMARIZE IT BOTH AS CATEGORICAL AND 
+vars = c(
+ 	"BASE_AGE", "AGE_CAT",
+ #	"AGE_65_74", "AGE_OVER_65"," AGE_OVER_75", 
+ 	"SEX_FEMALE", 
+ 	"STROKE_CHAD_BL", "CHF_CHAD_COMB_BL", "HYPT_GP_BL", "LIV_HAS_COMB_BL", "RENAL_HAS_GP_BL", "INR_5_OR_ABOVE_BL", "INR_8_OR_ABOVE_BL","ALCOHOL_BL", "VASC_CHAD_COMB_BL", "DIAB_CHAD_COMB_BL", "MEDICATION_HASB_BL", "MJ_BLEEDING_HASB_P_BL", "MJ_BLEEDING_GP_BL", "CHADSVASC_BL", "HASBLED_INR5_BL", "HASBLED_INR8_BL", "CHADSVASC_BL2", "HASBLED_INR5_BL2", "HASBLED_INR8_BL2");
+
+
+#create table1_AF_cohort
+library(tableone)
+
+local_table<-CreateTableOne(vars=vars, data=HAS_cohort, testApprox=chisq.test)		
+local_df=as.data.frame(print(local_table, printToggle = FALSE, test=TRUE));
+kable(local_df)
+
+
+
+local_table2<-CreateTableOne(vars=vars, strata = "BLEED",  data=HAS_cohort, testApprox=t.test);			
+local_df2=as.data.frame(print(local_table2, printToggle = FALSE, test=TRUE));
+kable(local_df2)
+
+#A font package that allows bringing in Windows fonts. This was done so that we can use unicode characters.
+#install.packages("extrafont",repo="http://cran.rstudio.com");
+
+#editing if needed
+library(extrafont)
+library(pander)
+
+name=as.character(c("n","AGE Mean(sd)", "","18-64", "65-74", "75+", "Female",
+                    "Stroke","Congestive Heart failure", "Hypertension","Liver disease", "Renal disease", "Labile INR (over5)", "Labile INR (over8)", "Alcohol consumption",
+                    "Vascular disease", "Diabetes","Antiplatelet drugs",
+                    "Major bleeding (hospital records)", "Major bleeding (GP records)", "CHA\u2082DS\u2082Vasc", "HAS-BLED with INR5", "HAS-BLED with INR8",
+                    "CHA\u2082DS\u2082Vasc score","   0","  1","  2","  3","  4","  5","  6","  7","  8","  9",
+                    "HAS-BLED (INR5)","  0","  1","  2","  3","  4","  5","  6","  7",
+                    "HAS-BLED (INR8)","  0","  1","  2","  3","  4","  5","  6"
+ ));
+
+table1 = cbind(name, local_df);
+# head(table1)
+colnames(table1)=c("Demographics and comorbidities", "AF Cohort(%)") 
+
+panderOptions('table.alignment.default', function(table1) ifelse(apply(table1, 2, is.numeric), 'right', 'left'));
+pander(table1, row.names=FALSE)
+kable(local_df)
+
+##table 2 
+name=as.character(c("n","AGE Mean(sd)", "","18-64", "65-74", "75+", "Female",
+                    "Stroke","Congestive Heart failure", "Hypertension","Liver disease", "Renal disease", "Labile INR (over5)", "Labile INR (over8)", "Alcohol consumption",
+                    "Vascular disease", "Diabetes","Antiplatelet drugs",
+                    "History of bleed(Hospital)", "History of bleed (GP)", "CHA\u2082DS\u2082Vasc", "HAS-BLED with INR5", "HAS-BLED with INR8",
+                    "CHA\u2082DS\u2082Vasc score","   0","  1","  2","  3","  4","  5","  6","  7","  8","  9",
+                    "HAS-BLED (INR5)","  0","  1","  2","  3","  4","  5","  6","  7",
+                    "HAS-BLED (INR8)","  0","  1","  2","  3","  4","  5","  6"
+ ));
+
+table2 = cbind(name, local_df2);
+
+ncol(table2)
+colnames(table2)=c("Demographics and comorbidities", "NO-BLEED","BLEED", "P-value", "test") 
+
+panderOptions('table.alignment.default', function(table2) ifelse(apply(table2, 2, is.numeric), 'right', 'left'));
+pander(table2, row.names=FALSE)
+
+kable(local_df2)
+
+```

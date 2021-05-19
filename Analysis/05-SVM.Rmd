@@ -1,0 +1,66 @@
+#Modelling
+
+##svm
+
+```{r}
+##################################
+#svm
+#################################
+
+svm<- sqlQuery(sql, "
+          SELECT  
+          ALF_PE, GNDR_CD, BLEED,TIME_TO_BLEED,
+          CASE 
+          	WHEN BASE_AGE < 65 THEN '18-65'
+          	WHEN BASE_AGE BETWEEN 65 AND 75 THEN '65-74'
+          	WHEN BASE_AGE >= 75 THEN '75+'
+          	END AS AGE_CAT
+          ,AGE_65_74, AGE_OVER_65, AGE_OVER_75 ,
+          SEX_FEMALE , STROKE_CHAD , MEDICATION_HASB , CHF_CHAD_COMB, HYPT_GP , LIV_HAS_COMB, RENAL_HAS_GP , INR_5_OR_ABOVE ,
+          INR_8_OR_ABOVE, ALCOHOL , VASC_CHAD_COMB , DIAB_CHAD_COMB , AC_BASELINE_2017 , MJ_BLEEDING_HASB_P , MJ_BLEEDING_GP , HASBLED_INR5 , HASBLED_INR8, CHADSVASC,
+          STROKE_CHAD_BL , MEDICATION_HASB_BL , CHF_CHAD_COMB_BL, HYPT_GP_BL , LIV_HAS_COMB_BL, RENAL_HAS_GP_BL , INR_5_OR_ABOVE_BL ,
+          INR_8_OR_ABOVE_BL, ALCOHOL_BL , VASC_CHAD_COMB_BL , DIAB_CHAD_COMB_BL , MJ_BLEEDING_HASB_P_BL , MJ_BLEEDING_GP_BL , HASBLED_INR5_BL , HASBLED_INR8_BL, CHADSVASC_BL,
+          EVER_SMOKED, NEVER_SMOKED, 
+          CASE
+          	WHEN HASBLED_INR5 >= 5 THEN 5
+          	ELSE HASBLED_INR5
+          	END AS HASBLED_INR5PLUS,
+          CASE
+          	WHEN HASBLED_INR8 >= 5 THEN 5
+          	ELSE HASBLED_INR8
+          	END AS HASBLED_INR8PLUS,
+          	 CASE
+          	WHEN HASBLED_INR5_BL >= 5 THEN 5
+          	ELSE HASBLED_INR5_BL
+          	END AS HASBLED_INR5PLUS_BL,
+          CASE
+          	WHEN HASBLED_INR8_BL >= 5 THEN 5
+          	ELSE HASBLED_INR8_BL
+          	END AS HASBLED_INR8PLUS_BL
+          FROM 	SAILW0866V.MSC_HASB_20190807
+          WHERE alf_pe IN 
+          	(
+          	SELECT * FROM SAILW0866V.ALF_ANALYSED_MSC_20190809
+          	)
+          	fetch first 1000 rows only
+		")
+sdata<-svm
+
+library(e1071)
+
+sdata$HASBLED_INR5_BL=as.factor(sdata$HASBLED_INR5_BL)
+str(sdata$BLEED)
+svmfit = svm(as.factor(BLEED) ~HASBLED_INR5_BL, data=sdata,
+             kernel = "linear",
+             cost = 3,
+             scale = FALSE)
+
+print(svmfit)
+plot(svmfit, sdata$HASBLED_INR5_BL)
+
+predict(svmfit, data=svm2, type="class")
+svmfit
+
+```
+
+

@@ -1,0 +1,261 @@
+
+#Modelling
+
+##Naive Bayes
+
+```{r}
+###################################
+#naive bayes
+###################################
+install.packages("pROC")
+library(pROC)
+
+nb<-surv
+
+bound<-floor((nrow(nb)/4)*3)
+
+nb<-nb[sample(nrow(nb)),]  #shuffling the data 
+nb.train<- nb[1:bound, ]
+nb.test <- nb[(bound+1):nrow(nb), ]
+
+nb.train$BLEED=as.factor(nb.train$BLEED)
+
+nb.model<-naiveBayes(BLEED ~ AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=nb.train)
+nb.model
+
+
+
+nb.model<-naiveBayes(BLEED ~ AGE_CAT+ SEX_FEMALE+ 
+                   MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                   LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                  MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+                  MEDICATION_HASB + CHF_CHAD_COMB + HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+INR_8_OR_ABOVE+ ALCOHOL
+, data=nb.train)
+
+
+#don't know why naive bayes prediction is not happening:SOLVED: the outcome variable needed to be in as factor
+nb.test$BLEED=as.factor(nb.test$BLEED)
+nb.pd<-predict(nb.model, nb.test)
+nb.confusion <- table(observed = nb.test$BLEED, predicted = nb.pd)
+
+##re-running with balanced dataset:
+nb<-RF
+
+bound<-floor((nrow(nb)/4)*3)
+
+nb<-nb[sample(nrow(nb)),]  #shuffling the data 
+nb.train<- nb[1:bound, ]
+nb.test <- nb[(bound+1):nrow(nb), ]
+
+nb.train$BLEED=as.factor(nb.train$BLEED)
+
+nb.model<-naiveBayes(BLEED ~ AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=nb.train)
+nb.model
+
+#don't know why naive bayes prediction is not happening:SOLVED: the outcome variable needed to be in as factor
+nb.test$BLEED=as.factor(nb.test$BLEED)
+nb.pd<-predict(nb.model, nb.test)
+nb.confusion <- table(observed = nb.test$BLEED, predicted = nb.pd)
+plot(nb.confusion)
+
+######################
+#ROC curves of naive bayes: I am here produce a ROC curve for nb models
+
+pr<-predict(nb.model, nb.test,prob=TRUE)
+pr$prob
+
+predvec<-ifelse(nb.train=="BLEED", 1, 0)
+realvec<-ifelse(nb.test=="BLEED", 1, 0)
+pr<-predict(nb.model,realvec)
+prf<-performance(pr,"tpr","fpr")
+
+prediction()
+nrow(predvec)
+nrow(realvec)
+
+#######################
+#cross fold validation
+#######################
+#2nd fold
+
+nb$BLEED=as.factor(nb$BLEED)
+nb2<-nb[sample(nrow(nb)),]  #shuffling the data 
+nb2.train<- nb2[1:bound, ]
+nb2.test <- nb2[(bound+1):nrow(nb2), ]
+
+nb2.model<-naiveBayes(BLEED ~ AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=nb2.train)
+#apriori and conditional probabilities
+nb2.pd<-predict(nb2.model, nb2.test)
+nb2.confusion <-table(observed=nb2.test$BLEED, predicted=nb2.pd)
+
+#3rd fold
+nb$BLEED=as.factor(nb$BLEED)
+nb3<-nb[sample(nrow(nb)),]  #shuffling the data 
+nb3.train<- nb3[1:bound, ]
+nb3.test <- nb3[(bound+1):nrow(nb3), ]
+
+nb3.train$BLEED=as.factor(nb3.train$BLEED)
+
+nb3.model<-naiveBayes(BLEED ~ AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=nb3.train)
+#apriori and conditional probabilities
+nb3.pd<-predict(nb3.model, nb3.test)
+nb3.confusion <-table(observed=nb3.test$BLEED, predicted=nb3.pd)
+nb3.confusion
+
+#4th fold
+nb$BLEED=as.factor(nb$BLEED)
+nb4<-nb[sample(nrow(nb)),]  #shuffling the data 
+nb4.train<- nb4[1:bound, ]
+nb4.test <- nb4[(bound+1):nrow(nb4), ]
+
+nb4.train$BLEED=as.factor(nb4.train$BLEED)
+
+nb4.model<-naiveBayes(BLEED ~ AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=nb4.train)
+#apriori and conditional probabilities
+nb4.pd<-predict(nb4.model, nb4.test)
+nb4.confusion <-table(observed=nb4.test$BLEED, predicted=nb4.pd)
+nb4.confusion
+
+#5th fold
+nb$BLEED=as.factor(nb$BLEED)
+nb5<-nb[sample(nrow(nb)),]  #shuffling the data 
+nb5.train<- nb5[1:bound, ]
+nb5.test <- nb5[(bound+1):nrow(nb5), ]
+
+nb5.train$BLEED=as.factor(nb5.train$BLEED)
+
+nb5.model<-naiveBayes(BLEED ~ AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL, data=nb5.train)
+#apriori and conditional probabilities
+nb5.pd<-predict(nb5.model, nb5.test)
+nb5.confusion <-table(observed=nb5.test$BLEED, predicted=nb5.pd)
+nb5.confusion
+
+#confusion results:
+ConfuOut<-function(t){
+  sensitivity<-t[1]/(t[1]+t[3])
+  specifity<-t[4]/(t[4]+t[2])
+  acc<-(t[1]+t[4])/(t[1]+t[2]+t[3]+t[4])
+  TP<-t[1]
+  FP<-t[3]
+  FN<-t[2]
+  TN<-t[4]
+  mal<-t[1]+t[2]
+  ben<-t[3]+t[4]
+  #tline stores all items in a nice list
+  tline<-cat(paste0("num_mal",":",mal,"\n",
+                    "num_ben",":",ben,"\n",
+                    "TP",":",TP,"\n",
+                    "FP",":",FP,"\n",
+                    "TN",":",TN,"\n",
+                    "FN",":",FN,"\n",
+                    "sensitivity",":",sensitivity,"\n",
+                    "specifity",":",specifity,"\n",
+                    "acc",":",acc,"\n"))
+return(tline)
+}
+
+ConfuOut(nb.confusion)
+ConfuOut(nb2.confusion)
+ConfuOut(nb3.confusion)
+ConfuOut(nb4.confusion)
+ConfuOut(nb5.confusion)
+
+#######################
+#ROC curve of naive bayes model :
+#library(ROCR)
+pr<-predict(nb.model,nb.test, type=c("class"))
+pr<-predict(nb.model,nb.test, type=c("raw"))
+
+#plot(pr)
+library(pROC)
+
+roc(nb.test$BLEED, pr[,1], plot=TRUE, legacy.axes=TRUE, percent=TRUE,xlab="False Positive Percentage", ylab="True Positive Percentage", col="#378eb8", lwb=2 ,print.auc=TRUE)
+
+
+roc(nb.test$BLEED, nb.test$HASBLED_INR5, plot=TRUE, legacy.axes=TRUE, percent=TRUE,xlab="False Positive Percentage", ylab="True Positive Percentage", col="#378eb8", lwb=2 ,print.auc=TRUE)
+#plot all three approach on one graph
+
+legend("bottomright", legend=c("Naive Bayes"),col=c("#377eb8"), lwd=4)      
+
+par(pty = "m")
+par(pty = "s")
+
+#######################################
+
+roc(nb.test$BLEED, pr[,1], plot=TRUE, legacy.axes=TRUE, percent=TRUE,xlab="False Positive Percentage", ylab="True Positive Percentage", col="#378eb8", lwb=2 ,print.auc=TRUE)
+#plot all three approach on one graph
+
+plot.roc(RF.train$BLEED, RF.model$votes[,1], percent=TRUE, col="#4daf4a", lwd=3,print.auc=TRUE, add=TRUE, print.auc.y=40)
+
+plot.roc(surv$BLEED, HASLOGIT$fitted.values, percent=TRUE, col="#a86eab", lwd=3,print.auc=TRUE, add=TRUE, print.auc.y=30)
+
+plot.roc(nb.test$BLEED, nb.test$HASBLED_INR5, precent=TRUE, col="red", lwb=5 ,print.auc=TRUE, add=TRUE, print.auc.y=30)
+
+#add a legend:
+legend("bottomright", legend=c("Naive Bayes", "Random Forest(balanced sample)", "logistic regression"),col=c("#377eb8","#4daf4a","#a86eab"), lwd=4)         
+
+
+View(nb.model$tables)
+#############################################
+#adding HASBLED to my chart:
+roc(nb.test$BLEED, nb.test$HASBLED_INR5, plot=TRUE, legacy.axes=TRUE, percent=TRUE,xlab="False Positive Percentage", ylab="True Positive Percentage", col="red", lwb=5 ,print.auc=TRUE,print.auc.y=40)
+
+plot.roc(nb.test$BLEED, pr[,1], percent=TRUE, col="#a86eab", lwd=2.5,print.auc=TRUE, add=TRUE, print.auc.y=30)
+
+plot.roc(RF.train$BLEED, RF.model$votes[,1], percent=TRUE, col="#4daf4a", lwd=2.5,print.auc=TRUE, add=TRUE, print.auc.y=50)
+
+plot.roc(surv$BLEED, HASLOGIT$fitted.values, percent=TRUE, col="#378eb8", lwd=2.5,print.auc=TRUE, add=TRUE, print.auc.y=20)
+
+#add a legend:
+legend("bottomright", legend=c("Random Forest(balanced sample)","HAS-BLED","Naive Bayes", "logistic regression"),col=c("#4daf4a","red","#a86eab","#377eb8"), lwd=4)         
+
+
+```

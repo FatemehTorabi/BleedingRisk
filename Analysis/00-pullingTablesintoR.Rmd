@@ -1,0 +1,193 @@
+---
+header-includes:
+- \usepackage{authblk}
+- \usepackage{amsmath}
+- \usepackage{longtable}
+- \usepackage{multirow}
+- \usepackage{rotating}
+- \usepackage{float}
+- \usepackage{array}
+- \usepackage{calc}
+- \usepackage{mwe}
+- \usepackage[titletoc,toc,page]{appendix}
+- \usepackage{amsthm}
+- \usepackage{subcaption}
+- \usepackage{graphicx}
+- \usepackage[T1]{fontenc}
+- \usepackage[utf8]{inputenc}
+- \usepackage{lmodern}
+- \usepackage{url}
+- \usepackage[svgnames]{xcolor}
+- \usepackage{pdfcolmk}
+- \usepackage{tikz}
+- \usepackage{pifont}
+- \usepackage{adjustbox,lipsum}
+- \usepackage{fancyhdr, graphicx}
+- \usepackage{placeins}
+- \usepackage{lastpage}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy} 
+
+output:
+  pdf_document: null
+  word_document:
+    fig_caption: yes
+    fig_height: 3.5
+    fig_width: 4
+    toc: yes
+    toc_depth: 2
+---
+```{r setup, include=FALSE}
+#install.packages("tigerstats")
+#install.packages("abd")
+#install.packages("mosaic")
+#library(mosaicCore)
+library(ggplot2)
+library(knitr)
+knitr::opts_chunk$set(fig.path = 'figures/',
+                      echo = FALSE, warning = FALSE, message = FALSE)
+
+#- \newcommand{\chapfnt}{\fontsize{20}{19}}
+#- \newcommand{\secfnt}{\fontsize{20}{17}}
+```
+
+---
+- \theoremstyle{remark}
+- \newtheorem{remark}{Remark}[section]
+
+---
+\newpage
+\cfoot{\thepage\ of \pageref{LastPage}}
+
+
+
+\begin{figure}
+\centering
+\begin{subfigure}{0.4\textwidth}
+  \centering
+  \includegraphics[width=0.50\linewidth]{Blank}
+\end{subfigure}
+\end{figure}
+
+
+\begin{figure}
+\centering
+\begin{subfigure}{0.4\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{HDRUK}
+\end{subfigure}
+\end{figure}
+
+
+
+\begin{figure}
+\centering
+\begin{subfigure}{0.4\textwidth}
+  \centering
+  \includegraphics[width=0.70\linewidth]{Uni}
+\end{subfigure}
+\end{figure}
+
+\vskip4cm
+\begin{center}
+\bfseries\Large {Epilepsy, anti-epileptic drugs and the risk of cardiovascular events}\\
+
+
+\vskip4cm
+\small This document provides an update of work \\
+\small that has been completed todate based on the agreed plan for project SAIL0758.\\
+\small The IGRP application  SAIL0758 for this project has been approved. \\
+
+\vskip4cm
+\ Health Data Research UK, Swansea University\\
+
+
+\ Date:February 2019
+\end{center}
+
+\newpage
+#  **Introduction**
+
+
+
+```{r packages&libraries,message=FALSE, comment=NA,echo=FALSE}
+
+## if source file hasn't been recognized check the folder directory
+#pop up a login box (may be behind current window)
+
+##Packages: 
+#if you get an error with the name of any packages: download the packages outside the markdown document.
+#install.packages ("RODBC");
+#install.packages("Cairo");
+#install.packages ("lattice");
+#install.packages ("sqldf");
+#install.packages ("getopt");
+
+library(RODBC);
+library (Cairo);
+library (lattice);
+library (getopt);
+library(dplyr)
+library(psych)
+library(rmarkdown)
+
+
+#Include the file login_box.r in your project. You may have to include the full
+#path to the file depending on how R is configured.
+#obtain the longin_box file either via wiki or ask any member of the team
+
+source("S:/0000 - Analysts Shared Resources/r-share/login_box.r");
+
+#Get the login info, using 'yourUsername' as username.
+
+login = getLogin();
+
+#Connect and get the database
+sql = odbcConnect('PR_SAIL',login[1],login[2]);
+login = 0 # this will make your password anonymous
+
+
+```
+
+```{r cohort , message=FALSE, comment=NA,echo=FALSE}
+#study cohort: using SWORD cohort table
+
+study_start=as.Date("2017-01-01")
+study_end= as.Date("2018-01-01")
+
+HAS_cohort = sqlQuery(sql,"
+SELECT 	
+	A.*, 
+	A.CHADSVASC_BL CHADSVASC_BL2,
+	A.HASBLED_INR5_BL HASBLED_INR5_BL2,
+	A.HASBLED_INR8_BL HASBLED_INR8_BL2, 
+	CASE 
+	WHEN BASE_AGE < 65 THEN '18-65'
+	WHEN BASE_AGE BETWEEN 65 AND 75 THEN '65-74'
+	WHEN BASE_AGE >= 75 THEN '75+'
+	END AS AGE_CAT
+FROM 	SAILW0866V.MSC_HASB_20190807 A
+WHERE A.alf_pe IN 
+	(
+	SELECT * FROM SAILW0866V.ALF_ANALYSED_MSC_20190809
+	)
+")
+
+#COHORT WITH GP_END_DATE
+
+#TO ADDRESS THE MISSINGNESS OF RECORDS WE PUT THE 6-MONTHS OF GP DATA IN PLACE
+
+#number of cases in the study cohort
+HAS_CASE= nrow(HAS_cohort)
+
+HAS_cohort$GNDR_CD = replace(HAS_cohort$GNDR_CD,HAS_cohort$GNDR_CD == "1","Male");
+HAS_cohort$GNDR_CD = replace(HAS_cohort$GNDR_CD,HAS_cohort$GNDR_CD == "2","Female");
+
+
+#avg_followup_yrs =  mean(ep.cohort$STUDY_GP_COVERAGE_DAYS/365.25);
+
+#total_followup_yrs = as.integer(sum(ep.cohort$STUDY_GP_COVERAGE_DAYS/365.25));
+
+#cohort_before_exclusions = nrow(ep_cohort);
+
+```

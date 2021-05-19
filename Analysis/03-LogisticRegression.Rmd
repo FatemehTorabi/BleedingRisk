@@ -1,0 +1,132 @@
+
+#Modelling 
+
+##Regression
+
+
+```{r reg,results="asis",echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,fig.width=7,fig.height=4}
+
+#using surv data for has analysis too:
+
+avg_followup_yrs =  mean(HAS_cohort$TIME_TO_BLEED/365.25);
+total_followup_yrs = as.integer(sum(HAS_cohort$TIME_TO_BLEED/365.25));
+
+
+#HAS.ANALYZE$CHADSVASC[HAS.ANALYZE$CHADSVASC==0]<- 1; #convert 0 to 1 
+#HAS.ANALYZE$CHADSVASC[HAS.ANALYZE$CHADSVASC==8]<- 7; #convert 8 to 7 
+#HAS.ANALYZE$CHADSVASC[HAS.ANALYZE$CHADSVASC==9]<- 7; #convert 9 to 7 
+#HAS.ANALYZE$CHADSVASC=as.factor(HAS.ANALYZE$CHADSVASC);
+
+#logistic regression:
+
+HASLOGIT<-glm (BLEED~ 
+                  AGE_CAT+ SEX_FEMALE+ 
+                  CHADSVASC_BL+STROKE_CHAD_BL+ MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                  VASC_CHAD_COMB_BL + DIAB_CHAD_COMB_BL + MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+                  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  +STROKE_CHAD + CHF_CHAD_COMB+ HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                  INR_8_OR_ABOVE+ ALCOHOL+ VASC_CHAD_COMB + DIAB_CHAD_COMB + NEVER_SMOKED+EVER_SMOKED , 
+                  data =surv, family = "binomial" )
+
+summary(HASLOGIT)
+
+#only HASBLED Variables in:
+HASLOGIT<-glm (BLEED~ 
+                  AGE_CAT+ MEDICATION_HASB_BL + HYPT_GP_BL+ STROKE_CHAD_BL+MJ_BLEEDING_HASB_P_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+ ALCOHOL_BL+ MEDICATION_HASB_BL
+,data =surv, family = "binomial" )
+
+summary(HASLOGIT)
+
+HASLOGIT<-glm (BLEED~ 
+                  AGE_CAT+ MEDICATION_HASB_BL + HYPT_GP_BL+ STROKE_CHAD_BL+MJ_BLEEDING_HASB_P_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+ ALCOHOL_BL+ MEDICATION_HASB_BL+
+                 CHADSVASC_BL
+,data =surv, family = "binomial" )
+
+summary(HASLOGIT)
+
+HASLOGIT<-glm (BLEED~ 
+                  AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                ##  DIAB_CHAD_COMB_BL + 
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+              ##  HASBLED_INR5PLUS_BL + HASBLED_INR8PLUS_BL
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+
+                ##  INR_8_OR_ABOVE+ 
+                ALCOHOL,
+              ##+ NEVER_SMOKED+EVER_SMOKED , 
+data =surv, family = "binomial" )
+
+summary(HASLOGIT)
+
+################################################################
+##play around with model:
+HASLOGIT<-glm (BLEED~ 
+                  AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+                  HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+ALCOHOL
+,data =surv, family = "binomial" )
+
+
+HASLOGIT<-glm (BLEED~ 
+                  AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+                 MEDICATION_HASB + CHF_CHAD_COMB + HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+INR_8_OR_ABOVE+ ALCOHOL
+,data =surv, family = "binomial" )
+
+
+HASLOGIT<-glm (BLEED~ 
+                  AGE_CAT+ SEX_FEMALE+ 
+                  MEDICATION_HASB_BL + CHF_CHAD_COMB_BL+ HYPT_GP_BL+
+                  LIV_HAS_COMB_BL+ RENAL_HAS_GP_BL+ INR_5_OR_ABOVE_BL+INR_8_OR_ABOVE_BL+ ALCOHOL_BL+
+                 MJ_BLEEDING_HASB_P_BL + MJ_BLEEDING_GP_BL +
+                 MEDICATION_HASB + CHF_CHAD_COMB + HYPT_GP+ LIV_HAS_COMB+ RENAL_HAS_GP+ INR_5_OR_ABOVE+INR_8_OR_ABOVE+ ALCOHOL
+,data =surv, family = "binomial" )
+
+
+summary(HASLOGIT)
+##################################################################
+
+#calculatin Rsquare: an attemp: McFadden =SS(mean)-SS(fit)/SS(mean): may need thisbut didn't do it for now
+
+install.packages("pROC")
+install.packages("randomForest")
+library(pROC)
+library(randomForest)
+
+roc(surv$BLEED, HASLOGIT$fitted.values, plot=TRUE)
+par(pty = "m")
+par(pty = "s")
+
+#looking at the false positive and true positives:
+roc.info <- roc(surv$BLEED, HASLOGIT$fitted.values, plot=TRUE, legacy.axes=TRUE, percent=TRUE,xlab="False Positive Percentage", ylab="True Positive Percentage", col="#378eb8", lwb=2 )
+
+roc.df<- data.frame(
+  tpp=roc.info$sensitivities*100,
+  fpp=(1-roc.info$specificities)*100,
+  thresholds=roc.info$thresholds)
+
+head(roc.df)
+tail(roc.df)
+#optimal balance of true positive and false positives
+roc.df[roc.df$tpp > 60 & roc.df$tpp < 80, ]
+
+#printing the AUC
+roc(surv$BLEED, HASLOGIT$fitted.values, plot=TRUE, legacy.axes=TRUE, percent=TRUE,xlab="False Positive Percentage", ylab="True Positive Percentage", col="#378eb8", lwb=2 ,print.auc=TRUE)
+
+#printing the partial AUC
+#adding 22 to make the line transparant
+
+roc(surv$BLEED, HASLOGIT$fitted.values, plot=TRUE, legacy.axes=TRUE, percent=TRUE,xlab="False Positive Percentage", ylab="True Positive Percentage", col="#378eb8", lwb=2 , print.auc.x=45, partial.auc=c(100,70), auc.polygon=TRUE, auc.polygon.col= "#578eb922",print.auc=TRUE)
+
+roc(surv$BLEED, HASLOGIT$fitted.values, plot=TRUE, legacy.axes=TRUE, percent=TRUE,xlab="False Positive Percentage", ylab="True Positive Percentage", col="#378eb8", lwb=2 , print.auc.x=45, partial.auc=c(50,80), auc.polygon=TRUE, auc.polygon.col= "#578eb922",print.auc=TRUE)
+
+p<- predict(HASLOGIT, binary)
+```
